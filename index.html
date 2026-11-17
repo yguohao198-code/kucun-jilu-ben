@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<title>库存记录本</title>
+<style>
+:root {
+  --primary: #2f6fed;
+  --primary-dark: #2457c4;
+  --green: #2e9e5b;
+  --red: #d64545;
+  --gray: #6b7280;
+  --border: #e2e5ea;
+  --bg: #f2f4f7;
+  --card: #ffffff;
+  --text: #1f2329;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px; color: var(--text); background: var(--bg);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; font-size: 16px; }
+
+/* ===== 顶栏 ===== */
+.topbar { display: flex; align-items: center; gap: 16px; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.brand { font-size: 20px; font-weight: 700; white-space: nowrap; }
+.tabs { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+.tab { padding: 9px 18px; font-size: 17px; border: 1px solid transparent; background: transparent; border-radius: 8px; color: var(--gray); }
+.tab:hover { background: #eef2fb; }
+.tab.active { background: var(--primary); color: #fff; font-weight: 600; }
+.top-actions { display: flex; gap: 8px; }
+
+/* ===== 按钮 ===== */
+.btn { border: none; border-radius: 8px; padding: 9px 16px; font-size: 16px; }
+.btn.primary { background: var(--primary); color: #fff; }
+.btn.primary:hover { background: var(--primary-dark); }
+.btn.gray { background: #eceff3; color: #374151; }
+.btn.gray:hover { background: #dfe4ea; }
+.btn.danger { background: #fdecec; color: var(--red); }
+.btn.danger:hover { background: #f8d7d7; }
+.btn.small { padding: 5px 10px; font-size: 14px; }
+.btn.big { width: 100%; padding: 14px; font-size: 19px; font-weight: 700; }
+
+/* ===== 页面区 ===== */
+main { flex: 1; overflow: hidden; position: relative; }
+.tabpage { display: none; height: 100%; overflow: auto; padding: 16px; }
+.tabpage.active { display: block; }
+
+/* ===== 卖货页 ===== */
+.sell-config { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; background: #fffbe6; border: 1px solid #f0e6b8; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; }
+.sell-config label { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.sell-config select, .sell-config input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fff; }
+#selCustomer { min-width: 190px; }
+.cust-pick { position: relative; display: inline-block; }
+#custPickInput { min-width: 190px; }
+.cust-pick-list { position: absolute; top: calc(100% + 4px); left: 0; min-width: 240px; max-height: 320px; overflow: auto; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); z-index: 60; }
+.cust-pick-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer; }
+.cust-pick-item:hover { background: #eef2fb; }
+#inpOrderNo { width: 210px; }
+.tier-pick { display: flex; align-items: center; gap: 6px; }
+.tier-btn { padding: 7px 14px; border: 1px solid var(--border); background: #fff; border-radius: 8px; font-size: 15px; color: var(--gray); }
+.tier-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.hint { color: #8a6d1a; font-size: 14px; }
+
+.sell-body { display: grid; grid-template-columns: 1fr 380px; gap: 14px; align-items: start; }
+.search { width: 100%; padding: 11px 14px; font-size: 17px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; background: var(--card); }
+.pgroup { margin-bottom: 14px; }
+.pgroup h4 { font-size: 16px; color: var(--gray); margin: 8px 2px 6px; display: flex; justify-content: space-between; }
+.pgroup h4 span { font-weight: normal; }
+.spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 10px; }
+.spec-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.sc-top { display: flex; justify-content: space-between; align-items: baseline; }
+.sc-name { font-size: 19px; font-weight: 700; }
+.sc-stock { font-size: 15px; color: var(--green); font-weight: 600; }
+.sc-stock.out { color: var(--red); }
+.sc-prices { font-size: 13px; color: var(--gray); min-height: 18px; }
+.sc-actions { display: flex; gap: 6px; align-items: center; }
+.qty-btn { width: 34px; height: 36px; font-size: 20px; border: 1px solid var(--border); background: #fff; border-radius: 8px; }
+.qty-btn:hover { background: #f0f3f7; }
+.qty-inp { width: 54px; height: 36px; text-align: center; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; }
+.add-btn { flex: 1; height: 36px; padding: 0; font-size: 16px; }
+
+/* 订单栏 */
+.cart { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; position: sticky; top: 0; }
+.cart h3 { font-size: 18px; margin-bottom: 4px; }
+.cart-meta { font-size: 13px; color: var(--gray); margin-bottom: 10px; min-height: 18px; }
+.cart-items { max-height: 42vh; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.cart-item { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; }
+.ci-info { flex: 1; font-size: 15px; line-height: 1.35; min-width: 0; }
+.ci-name { font-weight: 600; }
+.ci-sub { font-size: 12px; color: var(--gray); }
+.ci-qty { display: flex; align-items: center; gap: 4px; }
+.cart-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; font-size: 18px; font-weight: 600; }
+.cart-total b { font-size: 30px; color: var(--red); }
+.cart-actions { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.cart-empty { color: var(--gray); font-size: 14px; text-align: center; padding: 18px 0; }
+
+/* 识别订单 */
+.ocr-open { background: #eef4ff; border: 1.5px dashed #7aa5f5; color: #2f6fed; }
+.ocr-open:hover { background: #e2edff; }
+.modal.xl { width: min(1160px, 96vw); }
+.ocr-body { display: grid; grid-template-columns: 45% 55%; gap: 14px; }
+.ocr-imgbox { background: #f2f4f7; border: 1px dashed var(--border); border-radius: 10px; min-height: 240px; max-height: 56vh; overflow: auto; display: flex; align-items: center; justify-content: center; }
+.ocr-imgbox img { max-width: 100%; display: block; }
+.ocr-imgbox .empty { color: var(--gray); font-size: 14px; padding: 30px; text-align: center; line-height: 1.8; }
+.ocr-left-actions { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ocr-status { font-size: 14px; color: var(--gray); margin-bottom: 8px; min-height: 20px; }
+.ocr-status.error { color: var(--red); }
+.ocr-rows { max-height: 48vh; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.ocr-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; flex-wrap: wrap; background: var(--card); }
+.ocr-row.none { background: #f7f8fa; border-style: dashed; }
+.or-ok { color: var(--green); font-weight: 700; }
+.or-name { font-weight: 700; font-size: 15px; }
+.or-sub { color: var(--gray); font-size: 13px; flex: 1; min-width: 100px; }
+.or-raw { flex: 1; font-size: 14px; color: #374151; min-width: 120px; }
+.or-note { color: #b35c1d; font-size: 12px; }
+.ocr-qty { width: 64px; height: 32px; text-align: center; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
+@media (max-width: 900px) { .ocr-body { grid-template-columns: 1fr; } }
+
+/* ===== 筛选区 / 表格 ===== */
+.filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.filters input[type=text], .filters input[type=search] { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.filters input[type=date] { padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; }
+.chip { padding: 6px 13px; border: 1px solid var(--border); background: #fff; border-radius: 999px; font-size: 14px; color: var(--gray); }
+.chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: auto; margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { background: #f7f8fa; font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+.td-actions { display: flex; gap: 6px; }
+.total-row td { font-weight: 700; background: #f7f8fa; }
+.empty { color: var(--gray); text-align: center; padding: 26px; font-size: 15px; }
+.badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+.badge.wholesale { background: #e7f0ff; color: #2457c4; }
+.badge.retail { background: #e8f7ee; color: #1f7a44; }
+.badge.vip { background: #fdf0e7; color: #b35c1d; }
+.stats-title { font-size: 17px; font-weight: 700; margin: 4px 0 8px; }
+
+/* ===== 管理页 ===== */
+.manage-cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; align-items: start; }
+.manage-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.manage-card h3 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 18px; }
+.mg-product { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+.mg-product-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f7f8fa; flex-wrap: wrap; }
+.mg-product-head .name { font-size: 17px; font-weight: 700; flex: 1; }
+.mg-spec { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 15px; flex-wrap: wrap; }
+.mg-spec .sname { font-weight: 600; min-width: 80px; }
+.mg-spec .sinfo { color: var(--gray); font-size: 13px; flex: 1; min-width: 200px; }
+.mg-customer { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+.mg-customer:last-child { border-bottom: none; }
+.mg-customer .cname { font-weight: 600; flex: 1; }
+
+/* ===== 订单状态徽章 ===== */
+.badge.done { background: #e8f7ee; color: #1f7a44; }
+.badge.pending { background: #eceff3; color: #6b7280; }
+.badge.paid { background: #e8f7ee; color: #1f7a44; }
+.badge.unpaid { background: #fdeaea; color: #d92626; }
+
+/* ===== 账单管理 ===== */
+.billing-cols { display: grid; grid-template-columns: 280px 1fr; gap: 14px; align-items: start; }
+.bill-cust { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; background: var(--card); }
+.bill-cust:hover { background: #eef2fb; }
+.bill-cust.active { border-color: var(--primary); background: #eef2fb; }
+.bill-cust .bc-name { font-weight: 600; flex: 1; }
+.bill-cust .bc-info { font-size: 13px; color: var(--gray); }
+.bill-cust .bill-cust-check { width: 16px; height: 16px; flex: none; cursor: pointer; }
+.bill-merge-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 15px; }
+.bill-merge-row .bm-name { font-weight: 600; }
+.bill-merge-row .bm-info { font-size: 13px; color: var(--gray); }
+.bill-bottom { margin-top: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bill-checkall { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 14px; color: var(--gray); user-select: none; }
+.bill-checkall input[type=checkbox] { width: 17px; height: 17px; }
+.bill-checkall.bill-cust-all { margin-bottom: 0; }
+.bill-order { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+.bill-order:last-child { border-bottom: none; }
+.bill-order label { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
+.bill-order .bo-info { flex: 1; min-width: 0; }
+.bill-order .bo-main { font-size: 15px; }
+.bill-order .bo-sub { font-size: 13px; color: var(--gray); }
+.bill-order .bo-total { font-weight: 700; white-space: nowrap; }
+.bill-order input[type=checkbox] { width: 17px; height: 17px; }
+@media (max-width: 900px) { .billing-cols { grid-template-columns: 1fr; } }
+
+/* ===== 识别弹窗：粘贴文字 ===== */
+.ocr-paste { margin-top: 10px; }
+.ocr-paste textarea { width: 100%; min-height: 88px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical; font-family: inherit; }
+.ocr-paste .ocr-paste-row { margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ocr-pasted-text { background: #f2f4f7; border: 1px dashed var(--border); border-radius: 10px; min-height: 240px; max-height: 56vh; overflow: auto; padding: 14px; font-size: 14px; white-space: pre-wrap; color: #374151; }
+
+/* ===== 弹窗 ===== */
+#modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+.modal { background: #fff; border-radius: 12px; width: 560px; max-width: 100%; max-height: 86vh; display: flex; flex-direction: column; }
+.modal.wide { width: 780px; }
+.modal h3 { padding: 16px 20px; font-size: 20px; border-bottom: 1px solid var(--border); }
+.modal-body { padding: 16px 20px; overflow: auto; }
+.modal-body .note { font-size: 13px; color: #8a8f98; margin-top: 5px; }
+.batch-group { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 6px 0; }
+.batch-group .bg-head { font-size: 14px; margin-bottom: 4px; }
+.batch-row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; padding: 2px 0; }
+.batch-row .br-name { font-weight: 600; }
+.batch-row .br-sub { color: #8a8f98; font-size: 13px; }
+.batch-row span:last-child { margin-left: auto; }
+.modal-btns { padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
+.report-text { background: #f7f9fc; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; max-height: 56vh; overflow: auto; }
+.bare-hint { background: #fff8e1; border: 1px solid #f0d97a; color: #7a5c00; border-radius: 8px; padding: 10px 14px; font-size: 14px; line-height: 1.6; margin-bottom: 12px; }
+.form-row { margin-bottom: 12px; }
+.form-row label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 15px; }
+.form-row input, .form-row select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; }
+.form-prices { display: flex; gap: 10px; }
+.form-prices .form-row { flex: 1; }
+.form-inline { display: flex; gap: 8px; align-items: center; }
+.radio-row { display: flex; gap: 16px; }
+.radio-row label { display: flex; align-items: center; gap: 5px; font-weight: normal; }
+.big-total { font-size: 34px; color: var(--red); font-weight: 800; }
+.summary-table td, .summary-table th { padding: 6px 10px; font-size: 15px; }
+.warn-note { color: var(--red); font-size: 14px; }
+
+/* ===== toast ===== */
+#toast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 11px 22px; border-radius: 10px; font-size: 16px; z-index: 100; box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: 80%; }
+#toast.error { background: var(--red); }
+#toast.warn { background: #b35c1d; }
+
+footer { padding: 6px 16px; font-size: 12px; color: #9aa1ab; text-align: center; border-top: 1px solid var(--border); background: var(--card); }
+
+@media (max-width: 1100px) {
+  .sell-body { grid-template-columns: 1fr; }
+  .cart { position: static; }
+  .manage-cols { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">库存记录本</div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="sell">新建</button>
+    <button class="tab" data-tab="restock">补货</button>
+    <button class="tab" data-tab="billing">账单管理</button>
+    <button class="tab" data-tab="orders">订单管理</button>
+    <button class="tab" data-tab="stats">统计</button>
+    <button class="tab" data-tab="manage">产品与客户</button>
+  </nav>
+  <div class="top-actions">
+    <button id="btnExportBackup" class="btn gray small">导出备份</button>
+    <button id="btnImportBackup" class="btn gray small">导入备份</button>
+    <input type="file" id="fileImport" accept=".json" hidden>
+  </div>
+</header>
+
+<main>
+  <!-- ============ 卖货 ============ -->
+  <section id="tab-sell" class="tabpage active">
+    <div class="sell-config">
+      <label>客户
+        <span class="cust-pick">
+          <input id="custPickInput" type="text" placeholder="搜索或选择客户…" autocomplete="off">
+          <div id="custPickList" class="cust-pick-list" hidden></div>
+        </span>
+      </label>
+      <label>订单号
+        <input id="inpOrderNo" maxlength="50" placeholder="必填，如 20261104-01">
+      </label>
+      <div class="tier-pick">
+        <span style="font-weight:600">价格档</span>
+        <button class="tier-btn active" data-tier="auto">自动</button>
+        <button class="tier-btn" data-tier="wholesale">批发</button>
+        <button class="tier-btn" data-tier="vip">VIP</button>
+        <button class="tier-btn" data-tier="retail">零售</button>
+        <span id="tierHint" class="hint"></span>
+      </div>
+    </div>
+    <div class="sell-body">
+      <div class="spec-area">
+        <input id="inpSearch" class="search" placeholder="搜索产品或规格…">
+        <div id="specList"></div>
+      </div>
+      <aside class="cart">
+        <h3>当前订单</h3>
+        <div class="cart-meta"></div>
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-total">合计 <b id="cartTotal">¥0.00</b></div>
+        <div class="cart-actions">
+          <button id="btnBatchOrder" class="btn gray big">批量下单（表格导入）</button>
+          <button id="btnOcrOpen" class="btn ocr-open big">识别订单（截图/照片）</button>
+          <button id="btnCreateOrder" class="btn primary big">下单</button>
+          <button id="btnClearCart" class="btn gray">清空订单</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 补货 ============ -->
+  <section id="tab-restock" class="tabpage">
+    <div class="manage-cols">
+      <div class="manage-card">
+        <h3>手动补货</h3>
+        <div class="form-row"><label>产品规格</label><select id="rsSpec"></select></div>
+        <div class="form-row"><label>本次进货数量</label><input id="rsQty" type="text" inputmode="numeric" placeholder="例如：50"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="btnRestock" class="btn primary">确认补货</button>
+        </div>
+        <div class="note" style="margin-top:8px">补货在现有库存上累加；要直接改库存数字，用「产品与客户」页里的「纠错」。</div>
+      </div>
+      <div class="manage-card">
+        <h3>表格导入补货</h3>
+        <div class="note">模板三列：产品名 | 规格名 | 补货数量。导入后库存<b>累加</b>，并自动记入补货记录。</div>
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <button id="btnRsTemplate" class="btn primary">① 下载补货模板</button>
+          <button id="btnRsImport" class="btn gray">② 选择填好的表格导入</button>
+        </div>
+        <div class="note" style="margin-top:8px">产品/规格名要和软件里完全一致，对不上的行会跳过并提示。</div>
+      </div>
+    </div>
+    <div class="manage-card" style="margin-top:14px">
+      <h3>补货记录</h3>
+      <input id="rsSearch" type="text" class="search" placeholder="搜索产品或规格名…">
+      <div id="restockList" class="table-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ============ 账单管理 ============ -->
+  <section id="tab-billing" class="tabpage">
+    <div class="billing-cols">
+      <div class="manage-card">
+        <h3>客户（未开账单）<label class="bill-checkall bill-cust-all"><input type="checkbox" id="billCustCheckAll" disabled> 全选</label></h3>
+        <div class="note" style="margin-bottom:8px">勾选 2 个及以上客户，可合并成一张账单</div>
+        <div id="billCustomers"></div>
+      </div>
+      <div class="manage-card">
+        <h3 id="billRightTitle">← 点左侧客户查看</h3>
+        <label class="bill-checkall"><input type="checkbox" id="billCheckAll" disabled> 全选</label>
+        <div id="billOrders" class="table-wrap"></div>
+        <div class="bill-bottom">
+          <button id="btnBillExport" class="btn primary" disabled>合并导出账单（勾选）</button>
+          <span class="note">导出后这些订单状态变为「已完成」，并从这里消失</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 订单管理 ============ -->
+  <section id="tab-orders" class="tabpage">
+    <div class="filters">
+      <input id="ordSearch" type="text" placeholder="搜订单号/客户/品名/规格">
+      <input type="date" id="ordStart"> ~ <input type="date" id="ordEnd">
+      <button class="chip active" data-range="all">全部</button>
+      <button class="chip" data-range="today">今天</button>
+      <button class="chip" data-range="week">本周</button>
+      <button class="chip" data-range="month">本月</button>
+      <button class="chip" data-range="lastmonth">上月</button>
+      <span style="flex:1"></span>
+      <button id="btnCollectAll" class="btn gray">一键收款（勾选）</button>
+      <button id="btnMergeExport" class="btn gray">合并生成账单（勾选）</button>
+      <button id="btnExportOrders" class="btn primary">导出订单表格</button>
+    </div>
+    <div id="ordersList" class="table-wrap"></div>
+  </section>
+
+  <!-- ============ 统计 ============ -->
+  <section id="tab-stats" class="tabpage">
+    <div class="filters">
+      <input type="date" id="stStart"> ~ <input type="date" id="stEnd">
+      <button class="chip" data-range="today">今天</button>
+      <button class="chip" data-range="week">本周</button>
+      <button class="chip active" data-range="month">本月</button>
+      <button class="chip" data-range="lastmonth">上月</button>
+      <button class="chip" data-range="all">全部</button>
+      <span style="flex:1"></span>
+      <button id="btnExportStats" class="btn gray">导出汇总表</button>
+      <button id="btnExportStatsDetail" class="btn gray">导出明细表</button>
+      <button id="btnGenReport" class="btn primary">生成分析报告</button>
+    </div>
+    <div class="stats-title">销售汇总</div>
+    <div id="statsSummary" class="table-wrap"></div>
+    <div class="stats-title">客户收款汇总 <button id="btnExportCustPay" class="btn small gray" style="margin-left:8px">导出客户收款表</button></div>
+    <div id="custPaySummary" class="table-wrap"></div>
+    <div class="stats-title">订单明细 <input type="text" id="stDetailSearch" placeholder="搜索订单号/客户/品名/规格" style="margin-left:10px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;width:230px;font-weight:400;vertical-align:middle"></div>
+    <div id="statsDetail" class="table-wrap"></div>
+  </section>
+
+  <!-- ============ 产品与客户 ============ -->
+  <section id="tab-manage" class="tabpage">
+    <div class="manage-cols">
+      <div class="manage-card">
+        <h3>产品与规格 <span style="display:flex;gap:8px"><button id="btnImportXlsx" class="btn gray small">批量导入</button><button id="btnAddProduct" class="btn primary small">新增产品</button></span></h3>
+        <input id="manSearch" type="text" class="search" placeholder="搜索品名或规格名…">
+        <div id="productList"></div>
+      </div>
+      <div class="manage-card">
+        <h3>客户 <span style="display:flex;gap:8px"><button id="btnBatchCustomer" class="btn gray small">批量建客户</button><button id="btnExportCustomers" class="btn gray small">导出客户名</button><button id="btnAddCustomer" class="btn primary small">新增客户</button></span></h3>
+        <input id="custSearch" type="text" class="search" placeholder="搜索客户名…">
+        <div id="customerList"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>数据自动保存到程序文件夹里的「库存数据.json」 · 备份 = 复制整个文件夹，或用右上角「导出备份」</footer>
+
+<div id="modalOverlay" hidden>
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <div id="modalBody" class="modal-body"></div>
+    <div id="modalBtns" class="modal-btns"></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<script src="ocr-match.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

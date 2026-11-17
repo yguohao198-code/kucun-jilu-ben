@@ -1,0 +1,46 @@
+{
+  "name": "kucun-jilu-ben",
+  "productName": "库存记录本",
+  "version": "1.1.0",
+  "description": "私用库存记录桌面小工具",
+  "author": "local",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --win --dir"
+  },
+  "build": {
+    "appId": "com.local.kucunjiluben",
+    "productName": "库存记录本",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "app.js",
+      "ocr-match.js",
+      "package.json",
+      "langdata/**"
+    ],
+    "asar": false,
+    "win": {
+      "target": "dir"
+    },
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ]
+  },
+  "devDependencies": {
+    "@tesseract.js-data/chi_sim": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "electron": "^45.2.2",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "tesseract.js": "^7.0.0",
+    "xlsx": "^0.18.5"
+  }
+}

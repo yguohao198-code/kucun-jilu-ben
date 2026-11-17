@@ -1,0 +1,21 @@
+# 依赖
+node_modules/
+
+# 打包产物（几百 MB，不适合进代码仓库）
+release/
+*.zip
+
+# 数据文件（真实业务数据，绝不提交）
+库存数据.json
+库存数据-*.json
+导出设置.json
+
+# 本地测试/维护用的临时文件
+识别错配测试模板.txt
+diag-ocr.js
+kucun-*
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
